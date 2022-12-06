@@ -29,23 +29,24 @@ void init(const FunctionCallbackInfo<Value>& args) {
 
 void setcontrast(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
 
   // Check the number of arguments passed.
   if (args.Length() < 1) {
     // Throw an Error that is passed back to JavaScript
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+        String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
     return;
   }
 
   // Check the argument types
   if (!args[0]->IsNumber()) {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong arguments")));
+        String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
     return;
   }
 
-  LCDsetContrast((uint8_t)args[0]->NumberValue());
+  LCDsetContrast((uint8_t)args[0]->NumberValue(isolate->GetCurrentContext()).FromMaybe(0));
 }
 
 void clear(const FunctionCallbackInfo<Value>& args) {
@@ -54,25 +55,26 @@ void clear(const FunctionCallbackInfo<Value>& args) {
 
 void drawstring(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
 
   // Check the number of arguments passed.
   if (args.Length() < 3) {
     // Throw an Error that is passed back to JavaScript
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+        String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
     return;
   }
 
   // Check the argument types
   if (!args[0]->IsNumber() || args[1]->IsNumber() || args[2]->IsString()) {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong arguments")));
+        String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
     return;
   }
 
-  LCDdrawstring_P(args[0]->NumberValue(),
-    args[1]->NumberValue(),
-    (args.Length() > 0) ? *v8::String::Utf8Value(args[2]->ToString()) : "");
+  LCDdrawstring_P(args[0]->NumberValue(isolate->GetCurrentContext()),
+    args[1]->NumberValue(isolate->GetCurrentContext().FromMaybe(0)),
+    (args.Length() > 0) ? *v8::String::Utf8Value(isolate, args[2]->ToString()) : "");
 }
 
 void Initialize(Local<Object> exports) {

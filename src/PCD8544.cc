@@ -45,7 +45,7 @@ Lesser General Public License for more details.
 #include "PCD8544.h"
 
 // An abs() :)
-#define abs(a) (((a) < 0) ? -(a) : (a))
+#define abss(a) (((a) < 0) ? -(a) : (a))
 
 // bit set
 #define _BV(bit) (0x1 << (bit))
@@ -529,17 +529,17 @@ void LCDsetCursor(uint8_t x, uint8_t y)
 // bresenham's algorithm - thx wikpedia
 void LCDdrawline(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t color)
 {
-	uint8_t steep = abs(y1 - y0) > abs(x1 - x0);
+	uint8_t steep = abss(y1 - y0) > abss(x1 - x0);
 	if (steep)
 	{
-		swap(x0, y0);
-		swap(x1, y1);
+		swapp(x0, y0);
+		swapp(x1, y1);
 	}
 
 	if (x0 > x1)
 	{
-		swap(x0, x1);
-		swap(y0, y1);
+		swapp(x0, x1);
+		swapp(y0, y1);
 	}
 
 	// much faster to put the test here, since we've already sorted the points
@@ -547,7 +547,7 @@ void LCDdrawline(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t color)
 
 	uint8_t dx, dy;
 	dx = x1 - x0;
-	dy = abs(y1 - y0);
+	dy = abss(y1 - y0);
 
 	int8_t err = dx / 2;
 	int8_t ystep;
@@ -888,23 +888,24 @@ void init(const FunctionCallbackInfo<Value>& args)
 void setcontrast(const FunctionCallbackInfo<Value>& args)
 {
   Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
 
   // Check the number of arguments passed.
   if (args.Length() < 1) {
     // Throw an Error that is passed back to JavaScript
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+        String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
     return;
   }
 
   // Check the argument types
   if (!args[0]->IsNumber()) {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong arguments")));
+        String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
     return;
   }
 
-  LCDsetContrast((uint8_t)args[0]->NumberValue());
+  LCDsetContrast((uint8_t)args[0]->NumberValue(isolate->GetCurrentContext()).FromMaybe(0));
 }
 
 void clear(const FunctionCallbackInfo<Value>& args)
@@ -933,28 +934,29 @@ NAN_METHOD(drawstring)
 void drawstring(const FunctionCallbackInfo<Value>& args)
 {
   Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
 
   // Check the number of arguments passed.
   if (args.Length() < 3) {
     // Throw an Error that is passed back to JavaScript
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+        String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
     return;
   }
 
   // Check the argument types
   if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsString()) {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong arguments")));
+        String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
     return;
   }
 
-  v8::String::Utf8Value arg2(args[2]);
+  v8::String::Utf8Value arg2(isolate, args[2]);
   const char* s = *arg2;
 
   LCDdrawstring(
-    args[0]->NumberValue(),
-    args[1]->NumberValue(),
+    args[0]->NumberValue(isolate->GetCurrentContext()).FromMaybe(0),
+    args[1]->NumberValue(isolate->GetCurrentContext()).FromMaybe(0),
     s ? s : "");
 }
 
